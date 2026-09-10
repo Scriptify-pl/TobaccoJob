@@ -1,4 +1,4 @@
 {
-    "version": "1.0.0",
-    "message": "Standard Script"
+    "version": "1.1.0",
+    "message": "Reworked the script with secure server callbacks, server-side integration detection, configurable inventory, target, notification, clothing and boss menu bridges, optimized tobacco plant targets and boss menu props, PL/EN locales, optional job requirements, custom progress bar support and general performance improvements"
 }
