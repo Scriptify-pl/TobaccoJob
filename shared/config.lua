@@ -1,6 +1,6 @@
 Config = {}
 
-Config.Debug = true
+Config.Debug = false
 Config.VersionCheck = {
     enabled = true,
     repository = 'Scriptify-pl/TobaccoJob',
@@ -99,16 +99,79 @@ Config.Actions = {
         label = locale('action_sell_label'),
         targetLabel = locale('target_sell'),
         icon = 'fa-solid fa-handshake',
-        animation = {
-            dict = 'misscarsteal4@actor',
-            clip = 'actor_berating_loop',
-            flag = 1
-        },
         input = { item = Config.Items.pack, count = 1 },
         payment = {
             account = 'cash',
             minimum = 250,
             maximum = 1000
+        }
+    }
+}
+
+Config.PaymentAnimation = {
+    dictionary = 'sc_tobacco@payment',
+    clip = 'base',
+    flag = 0,
+    duration = 7100,
+    transactionTimeout = 30000,
+    serverMinimumDuration = 6500,
+    playerPosition = {
+        offset = vector3(0.0, 1.05, 0.0),
+        speed = 1.0,
+        timeout = 2500
+    },
+    receiver = {
+        dictionary = 'mp_common',
+        clip = 'givetake1_a',
+        flag = 0,
+        startTime = 4.15,
+        duration = 1800
+    },
+    props = {
+        {
+            owner = 'seller',
+            model = `prop_ld_wallet_02`,
+            bone = 57005,
+            transform = vector3(0.150, 0.070, -0.030),
+            rotation = vector3(90.000, 30.000, 180.000),
+            startTime = 2.35,
+            endTime = 3.58
+        },
+        {
+            owner = 'seller',
+            model = `ba_prop_battle_wallet_pickup`,
+            bone = 57005,
+            transform = vector3(0.180, 0.090, -0.080),
+            rotation = vector3(90.000, 30.000, 200.000),
+            startTime = 3.58,
+            endTime = 6.35
+        },
+        {
+            owner = 'seller',
+            model = `xs_prop_arena_cash_pile_s`,
+            bone = 18905,
+            transform = vector3(0.120, 0.040, 0.050),
+            rotation = vector3(90.000, 0.000, 30.000),
+            startTime = 4.22,
+            endTime = 5.30
+        },
+        {
+            owner = 'player',
+            model = `xs_prop_arena_cash_pile_s`,
+            bone = 57005,
+            transform = vector3(0.110, 0.020, -0.020),
+            rotation = vector3(90.000, 0.000, 30.000),
+            startTime = 5.25,
+            endTime = 6.10
+        },
+        {
+            owner = 'seller',
+            model = `prop_ld_wallet_02`,
+            bone = 57005,
+            transform = vector3(0.150, 0.070, -0.030),
+            rotation = vector3(90.000, 30.000, 180.000),
+            startTime = 6.35,
+            endTime = 7.10
         }
     }
 }
