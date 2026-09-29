@@ -118,37 +118,10 @@ function Tobacco.RefreshBlips()
     end
 end
 
-local function createPed(data)
-    if not data or not loadModel(data.model) then return end
-
-    local ped = CreatePed(
-        4,
-        data.model,
-        data.coords.x,
-        data.coords.y,
-        data.coords.z,
-        data.coords.w,
-        false,
-        false
-    )
-
-    if not DoesEntityExist(ped) then
-        debug(locale('debug_ped_create_failed', tostring(data.model)))
-        return
-    end
-
-    SetEntityHeading(ped, data.coords.w)
-    FreezeEntityPosition(ped, true)
-    SetEntityInvincible(ped, true)
-    SetBlockingOfNonTemporaryEvents(ped, true)
-    SetModelAsNoLongerNeeded(data.model)
-
-    return ped
-end
-
 function Tobacco.SpawnPeds()
-    Tobacco.peds.vehicle = createPed(Config.Peds.vehicle)
-    Tobacco.peds.seller = createPed(Config.Peds.seller)
+    if Tobacco.InitializeNetworkPeds then
+        Tobacco.InitializeNetworkPeds()
+    end
 end
 
 function Tobacco.SpawnJobVehicle()
@@ -347,12 +320,22 @@ function Tobacco.SpawnBossMenus()
             end
         end
     end
+
+    if BossMenu.RefreshReservations then BossMenu.RefreshReservations() end
 end
 
 function Tobacco.Cleanup()
+    if Tobacco.CleanupPaymentAnimation then
+        Tobacco.CleanupPaymentAnimation()
+    end
+
     Tobacco.RemoveTargets()
     Tobacco.RemoveBlips()
     Tobacco.DeleteBossMenus()
+
+    if Tobacco.ShutdownNetworkPeds then
+        Tobacco.ShutdownNetworkPeds()
+    end
 
     if Tobacco.spawnedVehicle and DoesEntityExist(Tobacco.spawnedVehicle) then
         local plate = GetVehicleNumberPlateText(Tobacco.spawnedVehicle)
@@ -360,12 +343,6 @@ function Tobacco.Cleanup()
         SetEntityAsMissionEntity(Tobacco.spawnedVehicle, true, true)
         DeleteEntity(Tobacco.spawnedVehicle)
         Tobacco.spawnedVehicle = nil
-    end
-
-    for _, ped in pairs(Tobacco.peds) do
-        if DoesEntityExist(ped) then
-            DeleteEntity(ped)
-        end
     end
 
     Tobacco.peds = {}

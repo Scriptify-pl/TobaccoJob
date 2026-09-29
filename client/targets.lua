@@ -13,6 +13,60 @@ local function jobOption(data)
     }
 end
 
+function Tobacco.RegisterSellerTarget(seller)
+    if not seller or not DoesEntityExist(seller) then return end
+    if Tobacco.sellerTargetEntity == seller then return end
+
+    if Tobacco.sellerTargetEntity and DoesEntityExist(Tobacco.sellerTargetEntity) then
+        Bridge.Target.RemoveLocalEntity(Tobacco.sellerTargetEntity, 'tobacco_sell')
+    end
+
+    Tobacco.sellerTargetEntity = seller
+    Bridge.Target.AddLocalEntity(seller, {
+        jobOption({
+            name = 'tobacco_sell',
+            icon = Config.Actions.sell.icon,
+            label = Config.Actions.sell.targetLabel,
+            distance = Config.Actions.sell.distance,
+            canInteract = function()
+                return not Tobacco.sellerBusy
+                    and not IsPedInAnyVehicle(PlayerPedId(), false)
+            end,
+            onSelect = Tobacco.RunSale
+        })
+    })
+end
+
+function Tobacco.RegisterVehicleTarget(vehicleWorker)
+    if not vehicleWorker or not DoesEntityExist(vehicleWorker) then return end
+    if Tobacco.vehicleTargetEntity == vehicleWorker then return end
+
+    if Tobacco.vehicleTargetEntity and DoesEntityExist(Tobacco.vehicleTargetEntity) then
+        Bridge.Target.RemoveLocalEntity(Tobacco.vehicleTargetEntity, {
+            'tobacco_spawn_vehicle',
+            'tobacco_store_vehicle'
+        })
+    end
+
+    Tobacco.vehicleTargetEntity = vehicleWorker
+    Bridge.Target.AddLocalEntity(vehicleWorker, {
+        jobOption({
+            name = 'tobacco_spawn_vehicle',
+            icon = 'fa-solid fa-truck',
+            label = locale('target_spawn_vehicle'),
+            distance = 3.0,
+            onSelect = Tobacco.SpawnJobVehicle
+        }),
+        jobOption({
+            name = 'tobacco_store_vehicle',
+            icon = 'fa-solid fa-warehouse',
+            label = locale('target_store_vehicle'),
+            distance = 3.0,
+            onSelect = Tobacco.StoreJobVehicle
+        })
+    })
+end
+
 function Tobacco.RegisterTargets()
     local gather = Config.Actions.gather
 
@@ -69,38 +123,8 @@ function Tobacco.RegisterTargets()
         })
     })
 
-    if Tobacco.peds.seller and DoesEntityExist(Tobacco.peds.seller) then
-        Bridge.Target.AddLocalEntity(Tobacco.peds.seller, {
-        jobOption({
-            name = 'tobacco_sell',
-            icon = Config.Actions.sell.icon,
-            label = Config.Actions.sell.targetLabel,
-            distance = Config.Actions.sell.distance,
-            onSelect = function()
-                Tobacco.RunAction('sell')
-            end
-        })
-        })
-    end
-
-    if Tobacco.peds.vehicle and DoesEntityExist(Tobacco.peds.vehicle) then
-        Bridge.Target.AddLocalEntity(Tobacco.peds.vehicle, {
-        jobOption({
-            name = 'tobacco_spawn_vehicle',
-            icon = 'fa-solid fa-truck',
-            label = locale('target_spawn_vehicle'),
-            distance = 3.0,
-            onSelect = Tobacco.SpawnJobVehicle
-        }),
-        jobOption({
-            name = 'tobacco_store_vehicle',
-            icon = 'fa-solid fa-warehouse',
-            label = locale('target_store_vehicle'),
-            distance = 3.0,
-            onSelect = Tobacco.StoreJobVehicle
-        })
-        })
-    end
+    Tobacco.RegisterSellerTarget(Tobacco.peds.seller)
+    Tobacco.RegisterVehicleTarget(Tobacco.peds.vehicle)
 end
 
 function Tobacco.RegisterBossMenuTargets(bossMenu, bossMenuId)
@@ -129,6 +153,7 @@ function Tobacco.RegisterBossMenuTargets(bossMenu, bossMenuId)
                 return not BossMenu.sceneBusy
                     and not BossMenu.playerSitting
                     and not BossMenu.computerActive
+                    and not BossMenu.occupants[bossMenuId]
                     and Tobacco.IsBoss()
                     and bossMenu.entities.chair
                     and DoesEntityExist(bossMenu.entities.chair)
@@ -180,14 +205,16 @@ function Tobacco.RemoveTargets()
 
     Tobacco.zones = {}
 
-    if Tobacco.peds.seller and DoesEntityExist(Tobacco.peds.seller) then
-        Bridge.Target.RemoveLocalEntity(Tobacco.peds.seller, 'tobacco_sell')
+    if Tobacco.sellerTargetEntity and DoesEntityExist(Tobacco.sellerTargetEntity) then
+        Bridge.Target.RemoveLocalEntity(Tobacco.sellerTargetEntity, 'tobacco_sell')
     end
+    Tobacco.sellerTargetEntity = nil
 
-    if Tobacco.peds.vehicle and DoesEntityExist(Tobacco.peds.vehicle) then
-        Bridge.Target.RemoveLocalEntity(Tobacco.peds.vehicle, {
+    if Tobacco.vehicleTargetEntity and DoesEntityExist(Tobacco.vehicleTargetEntity) then
+        Bridge.Target.RemoveLocalEntity(Tobacco.vehicleTargetEntity, {
             'tobacco_spawn_vehicle',
             'tobacco_store_vehicle'
         })
     end
+    Tobacco.vehicleTargetEntity = nil
 end

@@ -5,7 +5,16 @@ BossMenu = {
     computerActive = false,
     activeChairEntity = nil,
     activeBossMenuId = nil,
+    occupants = {},
+    remoteAnimationTokens = {},
     entries = {}
+}
+
+local bossMenuAnimationPhases = {
+    enter_chair = 0.9,
+    computer_enter_chair = 0.5,
+    computer_exit_chair = 0.5,
+    exit_chair = 0.9
 }
 
 local function requestAnimationDictionary()
@@ -88,6 +97,34 @@ local function getPedScenePosition(entity, objectAnimation, objectScenePosition)
     )
 end
 
+local function playObjectScene(entity, objectAnimation)
+    local scenePosition, sceneHeading = getTransform(entity, objectAnimation)
+    FreezeEntityPosition(entity, false)
+
+    local scene = CreateSynchronizedScene(
+        scenePosition.x,
+        scenePosition.y,
+        scenePosition.z,
+        0.0,
+        0.0,
+        sceneHeading,
+        0
+    )
+
+    PlaySynchronizedEntityAnim(
+        entity,
+        scene,
+        objectAnimation,
+        BossMenu.animationDictionary,
+        1000.0,
+        1.0,
+        0,
+        1.0
+    )
+
+    return scene, scenePosition, sceneHeading
+end
+
 local function waitForPhase(scene, targetPhase, timeoutMs)
     local timeout = GetGameTimer() + timeoutMs
 
@@ -103,34 +140,24 @@ local function waitForPhase(scene, targetPhase, timeoutMs)
     return true
 end
 
-local function playScene(entity, objectAnimation, pedAnimation, targetPhase, onStarted)
+local function playScene(
+    bossMenuId,
+    entity,
+    objectAnimation,
+    pedAnimation,
+    targetPhase,
+    onStarted
+)
     if not entity or not DoesEntityExist(entity) or not requestAnimationDictionary() then
         return false
     end
 
     local ped = PlayerPedId()
-    local scenePosition, sceneHeading = getTransform(entity, objectAnimation)
-    FreezeEntityPosition(entity, false)
-
-    local objectScene = CreateSynchronizedScene(
-        scenePosition.x,
-        scenePosition.y,
-        scenePosition.z,
-        0.0,
-        0.0,
-        sceneHeading,
-        0
-    )
-
-    PlaySynchronizedEntityAnim(
-        entity,
-        objectScene,
-        objectAnimation,
-        BossMenu.animationDictionary,
-        1000.0,
-        1.0,
-        0,
-        1.0
+    local _, scenePosition, sceneHeading = playObjectScene(entity, objectAnimation)
+    TriggerServerEvent(
+        'sc_tobaccojob:server:syncBossMenuAnimation',
+        bossMenuId,
+        objectAnimation
     )
 
     local pedScenePosition = getPedScenePosition(entity, objectAnimation, scenePosition)
@@ -164,6 +191,50 @@ local function playScene(entity, objectAnimation, pedAnimation, targetPhase, onS
     return completed
 end
 
+local function releaseBossMenu(bossMenuId)
+    if not bossMenuId then return false end
+    return Bridge.Callback.Await('sc_tobaccojob:server:releaseBossMenu', bossMenuId) == true
+end
+
+function BossMenu.RefreshReservations()
+    local states = Bridge.Callback.Await('sc_tobaccojob:server:getBossMenuStates')
+    if type(states) == 'table' then BossMenu.occupants = states end
+end
+
+RegisterNetEvent('sc_tobaccojob:client:setBossMenuState', function(bossMenuId, playerId)
+    bossMenuId = tonumber(bossMenuId)
+    if not bossMenuId then return end
+    BossMenu.occupants[bossMenuId] = playerId
+end)
+
+RegisterNetEvent(
+    'sc_tobaccojob:client:playBossMenuAnimation',
+    function(bossMenuId, objectAnimation, playerId)
+        if playerId == GetPlayerServerId(PlayerId()) then return end
+
+        local targetPhase = bossMenuAnimationPhases[objectAnimation]
+        local bossMenu = BossMenu.entries[tonumber(bossMenuId)]
+        local chair = bossMenu and bossMenu.entities.chair
+
+        if not targetPhase or not chair or not DoesEntityExist(chair) then return end
+
+        local menuId = tonumber(bossMenuId)
+        BossMenu.remoteAnimationTokens[menuId] =
+            (BossMenu.remoteAnimationTokens[menuId] or 0) + 1
+        local animationToken = BossMenu.remoteAnimationTokens[menuId]
+
+        CreateThread(function()
+            if not requestAnimationDictionary() then return end
+
+            local scene = playObjectScene(chair, objectAnimation)
+            waitForPhase(scene, targetPhase, 12000)
+            if BossMenu.remoteAnimationTokens[menuId] == animationToken then
+                FreezeEntityPosition(chair, true)
+            end
+        end)
+    end
+)
+
 function sc_bossmenu_start(bossMenuId)
     if BossMenu.sceneBusy or BossMenu.computerActive or BossMenu.playerSitting then return end
 
@@ -178,12 +249,33 @@ function sc_bossmenu_start(bossMenuId)
     end
 
     BossMenu.sceneBusy = true
+    local reservation = Bridge.Callback.Await(
+        'sc_tobaccojob:server:reserveBossMenu',
+        bossMenuId
+    )
+
+    if not reservation then
+        BossMenu.sceneBusy = false
+        return Bridge.Notify(locale('error_bossmenu_access'), 'error')
+    end
+
+    if not reservation.success then
+        BossMenu.sceneBusy = false
+        return Tobacco.ShowResponse(reservation)
+    end
 
     CreateThread(function()
         local chair = bossMenu.entities.chair
-        local enteredChair = playScene(chair, 'enter_chair', 'enter', 0.9)
+        local enteredChair = playScene(
+            bossMenuId,
+            chair,
+            'enter_chair',
+            'enter',
+            0.9
+        )
 
         if not enteredChair then
+            releaseBossMenu(bossMenuId)
             BossMenu.sceneBusy = false
             return
         end
@@ -194,6 +286,7 @@ function sc_bossmenu_start(bossMenuId)
         Wait(100)
 
         local enteredComputer = playScene(
+            bossMenuId,
             chair,
             'computer_enter_chair',
             'computer_enter',
@@ -206,8 +299,24 @@ function sc_bossmenu_start(bossMenuId)
             BossMenu.playerSitting = false
             BossMenu.activeChairEntity = nil
             BossMenu.activeBossMenuId = nil
+            releaseBossMenu(bossMenuId)
             BossMenu.sceneBusy = false
             return
+        end
+
+        local confirmed = Bridge.Callback.Await(
+            'sc_tobaccojob:server:confirmBossMenu',
+            bossMenuId
+        )
+
+        if not confirmed then
+            ClearPedTasksImmediately(PlayerPedId())
+            releaseBossMenu(bossMenuId)
+            BossMenu.playerSitting = false
+            BossMenu.activeChairEntity = nil
+            BossMenu.activeBossMenuId = nil
+            BossMenu.sceneBusy = false
+            return Bridge.Notify(locale('error_bossmenu_access'), 'error')
         end
 
         BossMenu.computerActive = true
@@ -219,6 +328,7 @@ function sc_bossmenu_stop()
     if BossMenu.sceneBusy or not BossMenu.computerActive then return end
 
     if not BossMenu.activeChairEntity or not DoesEntityExist(BossMenu.activeChairEntity) then
+        releaseBossMenu(BossMenu.activeBossMenuId)
         BossMenu.computerActive = false
         BossMenu.playerSitting = false
         BossMenu.activeChairEntity = nil
@@ -232,6 +342,7 @@ function sc_bossmenu_stop()
         local ped = PlayerPedId()
         local chair = BossMenu.activeChairEntity
         local exitedComputer = playScene(
+            BossMenu.activeBossMenuId,
             chair,
             'computer_exit_chair',
             'computer_exit',
@@ -245,8 +356,15 @@ function sc_bossmenu_stop()
 
         BossMenu.computerActive = false
         Wait(100)
-        playScene(chair, 'exit_chair', 'exit', 0.9)
+        playScene(
+            BossMenu.activeBossMenuId,
+            chair,
+            'exit_chair',
+            'exit',
+            0.9
+        )
 
+        releaseBossMenu(BossMenu.activeBossMenuId)
         BossMenu.playerSitting = false
         BossMenu.activeChairEntity = nil
         BossMenu.activeBossMenuId = nil
