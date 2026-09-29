@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 author 'Scriptify'
 description 'Tobacco job'
-version '1.1.0'
+version '1.1.1'
 
 files {
     'version',
@@ -28,6 +28,7 @@ shared_scripts {
 client_scripts {
     'client/bossmenu.lua',
     'client/functions.lua',
+    'client/animationpayment.lua',
     'client/targets.lua',
     'client/main.lua'
 }
