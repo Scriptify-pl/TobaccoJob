@@ -43,6 +43,12 @@
   "error_missing_pack": "You do not have a cigarette pack.",
   "error_remove_pack": "The cigarette pack could not be removed.",
   "error_payment": "The payment could not be issued.",
+  "error_payment_animation": "The payment animation could not be completed.",
+  "error_sale_expired": "The sale transaction expired.",
+  "error_seller_busy": "The seller is currently serving another player.",
+  "error_not_boss": "You do not have boss permissions.",
+  "error_bossmenu_busy": "This boss menu station is currently occupied.",
+  "error_bossmenu_access": "The boss menu could not be accessed.",
   "success_sale": "Pack sold for $%s.",
   "error_unsupported_action": "Unsupported action.",
   "error_stash_access": "You cannot open this stash.",
@@ -67,5 +73,9 @@
   "debug_bossmenu_incomplete": "Boss menu %s: could not create the complete setup.",
   "debug_bossmenu_spawned": "Boss menu %s: table=%s chair=%s computer=%s.",
   "debug_animation_load_failed": "Could not load the boss menu animation.",
-  "debug_animation_timeout": "The boss menu animation timed out."
+  "debug_animation_timeout": "The boss menu animation timed out.",
+  "debug_payment_animation_failed": "The payment animation failed: %s.",
+  "debug_payment_animation_load_failed": "Could not load the payment animation: %s.",
+  "debug_payment_control_failed": "Could not obtain control of the networked seller.",
+  "debug_seller_sync_failed": "Could not synchronize the networked NPCs."
 }

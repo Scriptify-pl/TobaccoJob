@@ -43,6 +43,12 @@
   "error_missing_pack": "Nie posiadasz paczki papierosów.",
   "error_remove_pack": "Nie udało się pobrać paczki.",
   "error_payment": "Nie udało się wypłacić pieniędzy.",
+  "error_payment_animation": "Nie udało się zakończyć animacji płatności.",
+  "error_sale_expired": "Transakcja sprzedaży wygasła.",
+  "error_seller_busy": "Sprzedawca obsługuje teraz innego gracza.",
+  "error_not_boss": "Nie posiadasz uprawnień szefa.",
+  "error_bossmenu_busy": "To stanowisko boss menu jest obecnie zajęte.",
+  "error_bossmenu_access": "Nie udało się uzyskać dostępu do boss menu.",
   "success_sale": "Sprzedano paczkę za $%s.",
   "error_unsupported_action": "Nieobsługiwana akcja.",
   "error_stash_access": "Nie możesz otworzyć tej szafki.",
@@ -67,5 +73,9 @@
   "debug_bossmenu_incomplete": "Boss menu %s: nie udało się utworzyć kompletnego stanowiska.",
   "debug_bossmenu_spawned": "Boss menu %s: stół=%s krzesło=%s komputer=%s.",
   "debug_animation_load_failed": "Nie udało się załadować animacji boss menu.",
-  "debug_animation_timeout": "Animacja boss menu przekroczyła limit czasu."
+  "debug_animation_timeout": "Animacja boss menu przekroczyła limit czasu.",
+  "debug_payment_animation_failed": "Animacja płatności nie powiodła się: %s.",
+  "debug_payment_animation_load_failed": "Nie udało się załadować animacji płatności: %s.",
+  "debug_payment_control_failed": "Nie udało się uzyskać kontroli nad sieciowym sprzedawcą.",
+  "debug_seller_sync_failed": "Nie udało się zsynchronizować sieciowych NPC."
 }
